@@ -1,0 +1,76 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page import="pokemon.model.Constantes" %>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Alta Carta</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="header">
+    <div class="header-left">
+        <h1>Pikachu Forever</h1>
+    </div>
+
+    <nav class="menu">
+        <a class="active" href="${pageContext.request.contextPath}/mi-coleccion">Mi Colección</a>
+        <a href="${pageContext.request.contextPath}/solicitudes/recibidas">Solicitudes Recibidas</a>
+        <a href="${pageContext.request.contextPath}/solicitudes/enviadas">Solicitudes Enviadas</a>
+    </nav>
+
+    <div class="user-info">
+        <div class="user-name">${sessionScope.usuario}</div>
+        <a href="${pageContext.request.contextPath}/logout" class="logout-link">Cerrar sesión</a>
+    </div>
+</header>
+
+<main>
+    <div class="content-container">
+        <h2>Nueva Carta</h2>
+
+        <% if (request.getAttribute("error") != null) { %>
+        <p style="color: red;"><%= request.getAttribute("error") %></p>
+        <% } %>
+
+        <form method="post" action="${pageContext.request.contextPath}/carta/nueva">
+            <div>
+                <label for="nombre">Nombre:</label>
+                <input type="text" id="nombre" name="nombre" maxlength="20" required>
+            </div>
+
+            <div>
+                <label for="puntos">Puntos:</label>
+                <input type="number" id="puntos" name="puntos" min="0" max="9999" required>
+            </div>
+
+            <div>
+                <label for="tipo">Tipo:</label>
+                <select id="tipo" name="tipo" required>
+                    <option value="Planta">Planta</option>
+                    <option value="Eléctrico">Eléctrico</option>
+                    <option value="Agua">Agua</option>
+                    <option value="Dragón">Dragón</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="estado">Estado:</label>
+                <select id="estado" name="estado" required>
+                    <option value="<%= Constantes.CARTA_DISPONIBLE %>"><%= Constantes.CARTA_DISPONIBLE %></option>
+                    <option value="<%= Constantes.CARTA_RESERVADO %>"><%= Constantes.CARTA_RESERVADO %></option>
+                    <option value="<%= Constantes.CARTA_INTRANSFERIBLE %>"><%= Constantes.CARTA_INTRANSFERIBLE %></option>
+                </select>
+            </div>
+
+            <div>
+                <button class="aceptar" type="submit">Guardar</button>
+                <a href="${pageContext.request.contextPath}/mi-coleccion">
+                    <button class="cancelar" type="button">Cancelar</button>
+                </a>
+            </div>
+        </form>
+    </div>
+</main>
+</body>
+</html>

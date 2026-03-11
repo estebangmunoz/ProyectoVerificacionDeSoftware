@@ -2,6 +2,9 @@ package main.java.pokemon.dao;
 
 import main.java.pokemon.model.Carta;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -78,4 +81,68 @@ public class CartaDAO {
         }
         return valor.replace("'", "''");
     }
+}
+
+public List<Carta> listarDisponiblesOtros(String usuario) {
+
+    DatabaseManager db = new DatabaseManager();
+    db.connect();
+
+    List<Carta> lista = new ArrayList<>();
+
+    String sql = "SELECT * FROM cartas WHERE dueno <> '" + usuario + "' AND estado = 'Disponible'";
+
+    ResultSet rs = db.executeQuery(sql);
+
+    try {
+        while (rs != null && rs.next()) {
+            Carta c = new Carta();
+            c.setId(rs.getInt("id"));
+            c.setDueno(rs.getString("dueno"));
+            c.setNombre(rs.getString("nombre"));
+            c.setPuntos(rs.getInt("puntos"));
+            c.setTipo(rs.getString("tipo"));
+            c.setFechaAlta(rs.getString("fecha_alta"));
+            c.setEstado(rs.getString("estado"));
+            lista.add(c);
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        db.disconnect();
+    }
+
+    return lista;
+}
+
+public List<Carta> listarDisponiblesMias(String usuario) {
+
+    DatabaseManager db = new DatabaseManager();
+    db.connect();
+
+    List<Carta> lista = new ArrayList<>();
+
+    String sql = "SELECT * FROM cartas WHERE dueno = '" + usuario + "' AND estado = 'Disponible'";
+
+    ResultSet rs = db.executeQuery(sql);
+
+    try {
+        while (rs != null && rs.next()) {
+            Carta c = new Carta();
+            c.setId(rs.getInt("id"));
+            c.setDueno(rs.getString("dueno"));
+            c.setNombre(rs.getString("nombre"));
+            c.setPuntos(rs.getInt("puntos"));
+            c.setTipo(rs.getString("tipo"));
+            c.setFechaAlta(rs.getString("fecha_alta"));
+            c.setEstado(rs.getString("estado"));
+            lista.add(c);
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        db.disconnect();
+    }
+
+    return lista;
 }

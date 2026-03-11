@@ -1,4 +1,4 @@
-package main.java.pokemon.servlet;
+package pokemon.servlet;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -6,9 +6,9 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import main.java.pokemon.dao.CartaDAO;
-import main.java.pokemon.dao.SolicitudDAO;
-import main.java.pokemon.model.Carta;
+import pokemon.dao.CartaDAO;
+import pokemon.dao.SolicitudDAO;
+import pokemon.model.Carta;
 
 import java.io.IOException;
 

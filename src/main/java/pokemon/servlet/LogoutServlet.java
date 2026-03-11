@@ -1,4 +1,4 @@
-package main.java.pokemon.servlet;
+package pokemon.servlet;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;

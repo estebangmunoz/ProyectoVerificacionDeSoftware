@@ -1,5 +1,5 @@
 
-package main.java.pokemon.model;
+package pokemon.model;
 
 public class Constantes {
     // Estados de Carta

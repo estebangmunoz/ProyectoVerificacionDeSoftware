@@ -1,52 +1,96 @@
-package main.java.pokemon.dao;
+package pokemon.dao;
 
-import main.java.pokemon.model.Carta;
-
+// 1. Corregido el import (quitamos main.java)
+import pokemon.model.Carta;
 import java.util.ArrayList;
 import java.util.List;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+// 2. FALTA ESTA LÍNEA: Define la clase
 public class CartaDAO {
 
+    // Método para tus compañeros
+    public List<Carta> listarDisponiblesOtros(String usuario) {
+        DatabaseManager db = new DatabaseManager();
+        db.connect();
+        List<Carta> lista = new ArrayList<>();
+        String sql = "SELECT * FROM carta WHERE dueno <> '" + usuario + "' AND estado = 'Disponible'";
+        ResultSet rs = db.executeQuery(sql);
+        try {
+            while (rs != null && rs.next()) {
+                lista.add(mapearCarta(rs));
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        finally { db.disconnect(); }
+        return lista;
+    }
+
+    // TU MÉTODO: Listar mis cartas (para MiColeccionServlet)
+    public List<Carta> listarCartasPorUsuario(String usuario) {
+        DatabaseManager db = new DatabaseManager();
+        db.connect();
+        List<Carta> lista = new ArrayList<>();
+        String sql = "SELECT * FROM carta WHERE dueno = '" + usuario + "'";
+        ResultSet rs = db.executeQuery(sql);
+        try {
+            while (rs != null && rs.next()) {
+                lista.add(mapearCarta(rs));
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        finally { db.disconnect(); }
+        return lista;
+    }
+
+    // TU MÉTODO: Borrar carta (para BorrarCartaServlet)
+    public boolean borrar(int id, String usuario) {
+        DatabaseManager db = new DatabaseManager();
+        db.connect();
+        String sql = "DELETE FROM carta WHERE id_carta = " + id + " AND dueno = '" + usuario + "'";
+        int filas = db.executeUpdate(sql);
+        db.disconnect();
+        return filas > 0;
+    }
+
+    // Método auxiliar para no repetir código (mapear datos de la BD a objeto Java)
+    private Carta mapearCarta(ResultSet rs) throws SQLException {
+        Carta c = new Carta();
+        c.setId(rs.getInt("id_carta")); // Asegúrate de que en SQL se llama id_carta
+        c.setDueno(rs.getString("dueno"));
+        c.setNombre(rs.getString("nombre"));
+        c.setPuntos(rs.getInt("puntos"));
+        c.setTipo(rs.getString("tipo"));
+        c.setEstado(rs.getString("estado"));
+        return c;
+    }
     public int insertar(Carta carta) {
         DatabaseManager db = new DatabaseManager();
         db.connect();
 
-        String sql = "INSERT INTO cartas (dueno, nombre, puntos, tipo, fecha_alta, estado) VALUES (" +
-                "'" + escape(carta.getDueno()) + "', " +
-                "'" + escape(carta.getNombre()) + "', " +
+        String sql = "INSERT INTO carta (dueno, nombre, puntos, tipo, estado) VALUES (" +
+                "'" + carta.getDueno() + "', " +
+                "'" + carta.getNombre() + "', " +
                 carta.getPuntos() + ", " +
-                "'" + escape(carta.getTipo()) + "', " +
-                "'" + escape(carta.getFechaAlta()) + "', " +
-                "'" + escape(carta.getEstado()) + "'" +
+                "'" + carta.getTipo() + "', " +
+                "'" + carta.getEstado() + "'" +
                 ")";
 
         int resultado = db.executeUpdate(sql);
         db.disconnect();
         return resultado;
     }
-
     public Carta obtenerPorId(int id) {
         DatabaseManager db = new DatabaseManager();
         db.connect();
 
-        String sql = "SELECT * FROM cartas WHERE id = " + id;
+        String sql = "SELECT * FROM carta WHERE id_carta = " + id;
         ResultSet rs = db.executeQuery(sql);
 
         Carta carta = null;
 
         try {
             if (rs != null && rs.next()) {
-                carta = new Carta();
-                carta.setId(rs.getInt("id"));
-                carta.setDueno(rs.getString("dueno"));
-                carta.setNombre(rs.getString("nombre"));
-                carta.setPuntos(rs.getInt("puntos"));
-                carta.setTipo(rs.getString("tipo"));
-                carta.setFechaAlta(rs.getString("fecha_alta"));
-                carta.setEstado(rs.getString("estado"));
+                carta = mapearCarta(rs);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -56,93 +100,45 @@ public class CartaDAO {
 
         return carta;
     }
-
     public boolean actualizar(Carta carta, String usuario) {
         DatabaseManager db = new DatabaseManager();
         db.connect();
 
-        String sql = "UPDATE cartas SET " +
-                "nombre = '" + escape(carta.getNombre()) + "', " +
+        String sql = "UPDATE carta SET " +
+                "nombre = '" + carta.getNombre() + "', " +
                 "puntos = " + carta.getPuntos() + ", " +
-                "tipo = '" + escape(carta.getTipo()) + "', " +
-                "estado = '" + escape(carta.getEstado()) + "' " +
-                "WHERE id = " + carta.getId() + " " +
-                "AND dueno = '" + escape(usuario) + "'";
+                "tipo = '" + carta.getTipo() + "', " +
+                "estado = '" + carta.getEstado() + "' " +
+                "WHERE id_carta = " + carta.getId() + " " +
+                "AND dueno = '" + usuario + "'";
 
         int filas = db.executeUpdate(sql);
         db.disconnect();
 
         return filas > 0;
     }
+    public List<Carta> listarDisponiblesMias(String usuario) {
+        DatabaseManager db = new DatabaseManager();
+        db.connect();
 
-    private String escape(String valor) {
-        if (valor == null) {
-            return "";
+        List<Carta> lista = new ArrayList<>();
+
+        // Buscamos solo las cartas del usuario que tengan estado 'Disponible'
+        String sql = "SELECT * FROM carta WHERE dueno = '" + usuario + "' AND estado = 'Disponible'";
+
+        ResultSet rs = db.executeQuery(sql);
+
+        try {
+            while (rs != null && rs.next()) {
+                lista.add(mapearCarta(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            db.disconnect();
         }
-        return valor.replace("'", "''");
-    }
-}
 
-public List<Carta> listarDisponiblesOtros(String usuario) {
-
-    DatabaseManager db = new DatabaseManager();
-    db.connect();
-
-    List<Carta> lista = new ArrayList<>();
-
-    String sql = "SELECT * FROM cartas WHERE dueno <> '" + usuario + "' AND estado = 'Disponible'";
-
-    ResultSet rs = db.executeQuery(sql);
-
-    try {
-        while (rs != null && rs.next()) {
-            Carta c = new Carta();
-            c.setId(rs.getInt("id"));
-            c.setDueno(rs.getString("dueno"));
-            c.setNombre(rs.getString("nombre"));
-            c.setPuntos(rs.getInt("puntos"));
-            c.setTipo(rs.getString("tipo"));
-            c.setFechaAlta(rs.getString("fecha_alta"));
-            c.setEstado(rs.getString("estado"));
-            lista.add(c);
-        }
-    } catch (Exception e) {
-        e.printStackTrace();
-    } finally {
-        db.disconnect();
+        return lista;
     }
 
-    return lista;
-}
-
-public List<Carta> listarDisponiblesMias(String usuario) {
-
-    DatabaseManager db = new DatabaseManager();
-    db.connect();
-
-    List<Carta> lista = new ArrayList<>();
-
-    String sql = "SELECT * FROM cartas WHERE dueno = '" + usuario + "' AND estado = 'Disponible'";
-
-    ResultSet rs = db.executeQuery(sql);
-
-    try {
-        while (rs != null && rs.next()) {
-            Carta c = new Carta();
-            c.setId(rs.getInt("id"));
-            c.setDueno(rs.getString("dueno"));
-            c.setNombre(rs.getString("nombre"));
-            c.setPuntos(rs.getInt("puntos"));
-            c.setTipo(rs.getString("tipo"));
-            c.setFechaAlta(rs.getString("fecha_alta"));
-            c.setEstado(rs.getString("estado"));
-            lista.add(c);
-        }
-    } catch (Exception e) {
-        e.printStackTrace();
-    } finally {
-        db.disconnect();
-    }
-
-    return lista;
 }

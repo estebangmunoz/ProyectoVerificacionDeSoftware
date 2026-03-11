@@ -1,4 +1,4 @@
-package main.java.pokemon.model;
+package pokemon.model;
 
 public class Carta {
     private int id;

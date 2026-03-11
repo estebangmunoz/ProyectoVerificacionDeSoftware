@@ -1,4 +1,4 @@
-package main.java.pokemon.dao;
+package pokemon.dao;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -12,7 +12,7 @@ public class UsuarioDAO {
         try {
             db.connect();
 
-            String sql = "SELECT * FROM Usuarios WHERE usuario='" + usuario +
+            String sql = "SELECT * FROM usuario WHERE usuario='" + usuario +
                     "' AND password='" + password + "'";
 
             ResultSet rs = db.executeQuery(sql);

@@ -1,24 +1,34 @@
-package main.java.pokemon.dao;
+package pokemon.dao;
 
-import main.java.pokemon.model.Solicitud;
+import pokemon.model.Solicitud;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
 public class SolicitudDAO {
 
-    public List<Solicitud> listarRecibidas(String usuario) {
+    public boolean crearSolicitud(int cartaSolicitadaId, int cartaOfrecidaId, String duenoSolicita, String duenoCartaSolicitada) {
+        DatabaseManager db = new DatabaseManager();
+        db.connect();
+        String sql = "INSERT INTO solicitudes (id_carta1, Dueno1, id_carta2, Dueno2, Estado, FechaSolicitud) VALUES (" +
+                cartaSolicitadaId + ", '" + duenoCartaSolicitada + "', " +
+                cartaOfrecidaId + ", '" + duenoSolicita + "', 'Pendiente', CURRENT_DATE)";
+        int res = db.executeUpdate(sql);
+        db.disconnect();
+        return res > 0;
+    }
+
+    public List<Solicitud> listarEnviadas(String usuario) {
         DatabaseManager db = new DatabaseManager();
         db.connect();
         List<Solicitud> lista = new ArrayList<>();
-
-        // Hacemos un JOIN para obtener los nombres de las cartas
+        // OJO: Asegúrate de que tus tablas en SQL se llaman 'solicitudes' y 'cartas'
         String sql = "SELECT s.id_solicitud, s.id_carta1, c1.nombre AS nombreSolicitada, " +
                 "s.id_carta2, c2.nombre AS nombreOfrecida, s.Dueno2, s.Estado, s.FechaSolicitud " +
                 "FROM solicitudes s " +
-                "JOIN cartas c1 ON s.id_carta1 = c1.id " +
-                "JOIN cartas c2 ON s.id_carta2 = c2.id " +
-                "WHERE s.Dueno1 = '" + escape(usuario) + "'";
+                "JOIN carta c1 ON s.id_carta1 = c1.id_carta " +
+                "JOIN carta c2 ON s.id_carta2 = c2.id_carta " +
+                "WHERE s.Dueno2 = '" + escape(usuario) + "'";
 
         ResultSet rs = db.executeQuery(sql);
         try {
@@ -42,6 +52,10 @@ public class SolicitudDAO {
         return lista;
     }
 
+    private String escape(String valor) {
+        if (valor == null) return "";
+        return valor.replace("'", "''");
+    }
     public Solicitud obtenerPorId(int id) {
         DatabaseManager db = new DatabaseManager();
         db.connect();
@@ -66,72 +80,49 @@ public class SolicitudDAO {
         }
         return s;
     }
-
     public boolean actualizarEstado(int id, String estado) {
         DatabaseManager db = new DatabaseManager();
         db.connect();
+
         String sql = "UPDATE solicitudes SET Estado = '" + escape(estado) + "' WHERE id_solicitud = " + id;
+
         int res = db.executeUpdate(sql);
         db.disconnect();
+
         return res > 0;
     }
+    public List<Solicitud> listarRecibidas(String usuario) {
+        DatabaseManager db = new DatabaseManager();
+        db.connect();
+        List<Solicitud> lista = new ArrayList<>();
 
-    private String escape(String valor) {
-        if (valor == null) return "";
-        return valor.replace("'", "''");
-    }
-}
+        // SQL que busca las solicitudes donde el usuario actual es el dueño de la carta solicitada (Dueno1)
+        String sql = "SELECT s.id_solicitud, s.id_carta1, c1.nombre AS nombreSolicitada, " +
+                "s.id_carta2, c2.nombre AS nombreOfrecida, s.Dueno2, s.Estado, s.FechaSolicitud " +
+                "FROM solicitudes s " +
+                "JOIN carta c1 ON s.id_carta1 = c1.id_carta " +
+                "JOIN carta c2 ON s.id_carta2 = c2.id_carta " +
+                "WHERE s.Dueno1 = '" + escape(usuario) + "'";
 
-public boolean crearSolicitud(int cartaSolicitadaId, int cartaOfrecidaId, String duenoSolicita, String duenoCartaSolicitada) {
-
-    DatabaseManager db = new DatabaseManager();
-    db.connect();
-
-    String sql = "INSERT INTO solicitudes (id_carta1, Dueno1, id_carta2, Dueno2, Estado, FechaSolicitud) VALUES (" +
-            cartaSolicitadaId + ", '" + duenoCartaSolicitada + "', " +
-            cartaOfrecidaId + ", '" + duenoSolicita + "', 'Pendiente', CURRENT_DATE)";
-
-    int res = db.executeUpdate(sql);
-
-    db.disconnect();
-
-    return res > 0;
-}
-
-public List<Solicitud> listarEnviadas(String usuario) {
-
-    DatabaseManager db = new DatabaseManager();
-    db.connect();
-
-    List<Solicitud> lista = new ArrayList<>();
-
-    String sql = "SELECT s.id_solicitud, s.id_carta1, c1.nombre AS nombreSolicitada, " +
-            "s.id_carta2, c2.nombre AS nombreOfrecida, s.Dueno2, s.Estado, s.FechaSolicitud " +
-            "FROM solicitudes s " +
-            "JOIN cartas c1 ON s.id_carta1 = c1.id " +
-            "JOIN cartas c2 ON s.id_carta2 = c2.id " +
-            "WHERE s.Dueno2 = '" + escape(usuario) + "'";
-
-    ResultSet rs = db.executeQuery(sql);
-
-    try {
-        while (rs != null && rs.next()) {
-            Solicitud s = new Solicitud();
-            s.setId(rs.getInt("id_solicitud"));
-            s.setCartaSolicitada(rs.getInt("id_carta1"));
-            s.setNombreCartaSolicitada(rs.getString("nombreSolicitada"));
-            s.setCartaOfrecida(rs.getInt("id_carta2"));
-            s.setNombreCartaOfrecida(rs.getString("nombreOfrecida"));
-            s.setUsuarioSolicita(rs.getString("Dueno2"));
-            s.setEstado(rs.getString("Estado"));
-            s.setFechaSolicitud(rs.getString("FechaSolicitud"));
-            lista.add(s);
+        ResultSet rs = db.executeQuery(sql);
+        try {
+            while (rs != null && rs.next()) {
+                Solicitud s = new Solicitud();
+                s.setId(rs.getInt("id_solicitud"));
+                s.setCartaSolicitada(rs.getInt("id_carta1"));
+                s.setNombreCartaSolicitada(rs.getString("nombreSolicitada"));
+                s.setCartaOfrecida(rs.getInt("id_carta2"));
+                s.setNombreCartaOfrecida(rs.getString("nombreOfrecida"));
+                s.setUsuarioSolicita(rs.getString("Dueno2"));
+                s.setEstado(rs.getString("Estado"));
+                s.setFechaSolicitud(rs.getString("FechaSolicitud"));
+                lista.add(s);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            db.disconnect();
         }
-    } catch (Exception e) {
-        e.printStackTrace();
-    } finally {
-        db.disconnect();
+        return lista;
     }
-
-    return lista;
-}
+} // <--- CERRAR CLASE

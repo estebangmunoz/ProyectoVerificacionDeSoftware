@@ -1,10 +1,10 @@
-package main.java.pokemon.servlet;
+package pokemon.servlet;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-import main.java.pokemon.dao.SolicitudDAO;
-import main.java.pokemon.model.Solicitud;
+import pokemon.dao.SolicitudDAO;
+import pokemon.model.Solicitud;
 
 import java.io.IOException;
 import java.util.List;

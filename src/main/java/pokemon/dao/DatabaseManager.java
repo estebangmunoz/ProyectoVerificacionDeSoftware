@@ -1,4 +1,4 @@
-package main.java.pokemon.dao;
+package pokemon.dao;
 
 import java.sql.*;
 import java.util.logging.Level;
@@ -8,99 +8,101 @@ public class DatabaseManager {
     private static final Logger logger = Logger.getLogger(DatabaseManager.class.getName());
 
     private Connection connection;
-    private String url = "jdbc:mysql://localhost:3306/CartasPokemon?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
-    private String user = "pokemon_user";
-    private String password = "12345678";
+
+    // CONFIGURACIÓN CORREGIDA
+    // 1. Nombre de BD en minúsculas (como salió en tu terminal)
+    // 2. Usuario 'root' es más seguro para evitar fallos de permisos ahora mismo
+    private String url = "jdbc:mysql://localhost:3306/cartaspokemon?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
+    private String user = "root";
+    private String password = "12345678"; // SI TU ROOT TIENE CONTRASEÑA, PONLA AQUÍ
 
     public DatabaseManager() {
+        // Forzamos la conexión al instanciar para evitar el NullPointerException
+        connect();
     }
 
-    // Conectar a la base de datos
     public void connect() {
         try {
             if (connection == null || connection.isClosed()) {
-            	if (url == null || user == null || password == null) {
-                    logger.log(Level.SEVERE, "Error: URL, usuario o contraseña son NULL.");
-                    return;
-                }
-                try {
-                    Class.forName("com.mysql.cj.jdbc.Driver");
-                } catch (ClassNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
+                Class.forName("com.mysql.cj.jdbc.Driver");
                 connection = DriverManager.getConnection(url, user, password);
-                logger.info("Conexión establecida con la base de datos.");
+                logger.info("¡Conexión establecida con éxito a cartaspokemon!");
             }
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Error al conectar a la base de datos", e);
-	    } 
+        } catch (ClassNotFoundException | SQLException e) {
+            logger.log(Level.SEVERE, "ERROR CRÍTICO: No se pudo conectar a la base de datos. " +
+                    "Revisa si el nombre 'cartaspokemon', el usuario '" + user + "' o la contraseña son correctos.", e);
+        }
     }
 
-    // Cerrar la conexión
     public void disconnect() {
         try {
             if (connection != null && !connection.isClosed()) {
                 connection.close();
-                logger.info("Conexión cerrada correctamente.");
+                logger.info("Conexión cerrada.");
             }
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Error al cerrar la conexión", e);
         }
     }
 
-    // Ejecutar sentencia SQL de modificación (INSERT, UPDATE, DELETE)
     public int executeUpdate(String sql) {
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            return stmt.executeUpdate();
+        // Aseguramos que la conexión esté abierta antes de usarla
+        if (connection == null) connect();
+
+        try (Statement stmt = connection.createStatement()) {
+            return stmt.executeUpdate(sql);
         } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Error ejecutando update", e);
+            logger.log(Level.SEVERE, "Error en update: " + sql, e);
             return -1;
         }
     }
 
-    // Ejecutar sentencia SQL de consulta (SELECT)
     public ResultSet executeQuery(String sql) {
+        if (connection == null) connect();
+
         try {
-            PreparedStatement stmt = connection.prepareStatement(sql);
-            return stmt.executeQuery();
+            Statement stmt = connection.createStatement();
+            return stmt.executeQuery(sql);
         } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Error ejecutando consulta", e);
+            logger.log(Level.SEVERE, "Error en query: " + sql, e);
             return null;
         }
     }
-    
-    // Ejecutar sentencias SQL de modificación (INSERT, UPDATE, DELETE) dentro de una transacción
-    public boolean executeTransaction(String[] sqlStatements) {
-    	boolean resultado = false;
-    	if (sqlStatements != null) {
-	    	try {
-	            connection.setAutoCommit(false); // Iniciar transacción
-	                    
-		        for (int i = 0; i < sqlStatements.length; i++) {
-		            executeUpdate(sqlStatements[i]);
-		        }
-	
-		        connection.commit(); // Confirmar transacción
-		        logger.info("Transacción completada con éxito.");
-		        resultado = true;
-		            
-		    } catch (SQLException e) {
-		            try {
-		                connection.rollback(); // Revertir cambios en caso de error
-		                logger.log(Level.SEVERE, "Error en la transacción, no se ha producido ningún cambio", e);
-		            } catch (SQLException rollbackEx) {
-		            	logger.log(Level.SEVERE, "Error al hacer rollback", rollbackEx);
-		            }
-		            resultado = false;
-		    } finally {
-		            try {
-		                connection.setAutoCommit(true); // Restaurar autocommit
-		            } catch (SQLException e) {
-		            	logger.log(Level.WARNING, "Error restaurando autocommit", e);
-		            }
-		        }
-    	}//if
-    	return resultado;
+
+    public Connection getConnection() {
+        if (connection == null) connect();
+        return connection;
     }
 
+    public boolean executeTransaction(String[] sqlStatements) {
+        boolean resultado = false;
+        if (sqlStatements != null) {
+            if (connection == null) connect();
+            try {
+                connection.setAutoCommit(false);
+                try (Statement stmt = connection.createStatement()) {
+                    for (String sql : sqlStatements) {
+                        stmt.executeUpdate(sql);
+                    }
+                }
+                connection.commit();
+                logger.info("Transacción completada con éxito.");
+                resultado = true;
+            } catch (SQLException e) {
+                try {
+                    if (connection != null) connection.rollback();
+                    logger.log(Level.SEVERE, "Error en la transacción, haciendo rollback", e);
+                } catch (SQLException rollbackEx) {
+                    logger.log(Level.SEVERE, "Error al hacer rollback", rollbackEx);
+                }
+            } finally {
+                try {
+                    if (connection != null) connection.setAutoCommit(true);
+                } catch (SQLException e) {
+                    logger.log(Level.WARNING, "Error al restaurar autocommit", e);
+                }
+            }
+        }
+        return resultado;
+    }
 }
